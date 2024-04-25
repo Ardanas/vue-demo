@@ -3,7 +3,9 @@
 
 <template>
   <div p-lg text-lg>
-    hello
+    hello1
+    <A />
+    <RouterView />
   </div>
 </template>
 

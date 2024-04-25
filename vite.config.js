@@ -4,6 +4,7 @@ import vue from '@vitejs/plugin-vue'
 import UnoCSS from 'unocss/vite'
 import AutoImport from 'unplugin-auto-import/vite'
 import Components from 'unplugin-vue-components/vite'
+import Pages from 'vite-plugin-pages'
 
 export default defineConfig({
   plugins: [
@@ -23,6 +24,9 @@ export default defineConfig({
       vueTemplate: true,
     }),
     Components({ dirs: ['src/components/'], dts: true }),
+    Pages({
+      dirs: 'src/pages',
+    }),
   ],
   server: {
     port: 5175,
