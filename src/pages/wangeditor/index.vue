@@ -9,6 +9,8 @@ const props = defineProps({
   title: String,
 })
 
+const TEST_HTML = `<p><img src="/images/OIP.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-1.jpeg" alt="" data-href="" style=""/></p><p><br></p><p><br></p><p><img src="/images/OIP-2.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字测试文字</p><p>测试文字</p><p><img src="/images/OIP-3.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-4.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-5.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p><img src="/images/OIP-6.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p><img src="/images/OIP-7.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p>`
+
 // 编辑器实例，必须用 shallowRef，重要！
 const editorRef = shallowRef()
 
@@ -79,9 +81,10 @@ function pgeneralDataJSON() {
 }
 
 function handlePreview() {
-  if (!step.value)
+  if (!step.value) {
     // eslint-disable-next-line no-alert
     return alert('请输入要按照多少切割文章')
+  }
 
   handleSave()
 }
@@ -93,6 +96,9 @@ function handleSave() {
       content,
     })
     return editor.getHtml()
+  })
+  nextTick(() => {
+    observeImage('#preview img')
   })
 }
 
@@ -121,6 +127,53 @@ onBeforeUnmount(() => {
 
   editor.destroy()
 })
+
+function replaceImgSrcWithDataSrc(htmlString) {
+  // 使用正则表达式匹配所有img标签的src属性
+  const regex = /<img[^>]+src="([^">]+)"/g
+
+  // 将匹配到的src属性替换为data-src属性
+  const replacedHtml = htmlString.replace(regex, '<img src="#" data-href="$1"')
+
+  return replacedHtml
+}
+
+function queryData() {
+  setTimeout(() => {
+    const html = replaceImgSrcWithDataSrc(TEST_HTML)
+    editorRef.value.setHtml(html)
+
+    nextTick(() => {
+      observeImage('#editor img')
+    })
+  }, 1000)
+}
+
+function observeImage(selector) {
+  const images = document.querySelectorAll(selector) // 获取所有图片标签元素
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      // 判断当前元素是否可见
+      if (entry.isIntersecting) {
+        // 创建一个自定义属性data-src存放真正要显示的图片路径，原本img自带的src放一张默认图片
+        const img = entry.target
+        const data_src = img.getAttribute('data-href')
+        img.setAttribute('src', data_src)
+        // 解除观察，有几张图片就触发几次
+        observer.unobserve(img)
+      }
+    })
+  }, { threshold: 0.01 }) // 设置触发加载时的视图交叉比例
+
+  images.forEach((image) => {
+    // 对每一个图片对象进行观察
+    observer.observe(image)
+  })
+}
+
+onMounted(() => {
+  queryData()
+})
 </script>
 
 <template>
@@ -143,6 +196,7 @@ onBeforeUnmount(() => {
           mode="simple"
         />
         <Editor
+          id="editor"
           v-model="valueHtml"
           min-h-xl
           :default-config="editorConfig"
@@ -155,7 +209,7 @@ onBeforeUnmount(() => {
         />
       </div>
       <div border />
-      <div flex flex-col gap-6 w="1/2">
+      <div id="preview" flex flex-col gap-6 w="1/2">
         <div v-for="(html, i) in paragraphs" :key="i">
           <div text-xl text-red-5 font-bold>
             paragraphs {{ i + 1 }}
