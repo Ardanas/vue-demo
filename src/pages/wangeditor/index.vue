@@ -2,6 +2,8 @@
 import '@wangeditor/editor/dist/css/style.css'
 import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import { createEditor } from '@wangeditor/editor'
+import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
+import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 
 const props = defineProps({
   loading: Boolean,
@@ -66,6 +68,7 @@ function pgeneralDataJSON() {
     // eslint-disable-next-line no-alert
     return alert('请先输入内容')
   const dataJSON = editorRef.value.children
+  console.log('dataJSON', dataJSON)
   const _step = step.value
   let s = 0
   let e = _step
@@ -91,15 +94,20 @@ function handlePreview() {
 
 function handleSave() {
   const dataJSONArr = pgeneralDataJSON()
-  paragraphs.value = dataJSONArr.map((content) => {
+  console.log('dataJSONArr', dataJSONArr)
+  paragraphs.value = dataJSONArr.map((content, index) => {
     const editor = createEditor({
       content,
     })
-    return editor.getHtml()
+    return {
+      id: `p_${index}`,
+      text: editor.getText(),
+      html: editor.getHtml(),
+    }
   })
-  nextTick(() => {
-    observeImage('#preview img')
-  })
+  // nextTick(() => {
+  //   observeImage('#preview img')
+  // })
 }
 
 function handleKeyDown(event) {
@@ -139,14 +147,16 @@ function replaceImgSrcWithDataSrc(htmlString) {
 }
 
 function queryData() {
-  setTimeout(() => {
-    const html = replaceImgSrcWithDataSrc(TEST_HTML)
-    editorRef.value.setHtml(html)
+  fetch('/text.json').then(response => response.json())
+    .then((res) => {
+      const editor = createEditor({ content: res })
+      const html = editor.getHtml()
+      valueHtml.value = html
 
-    nextTick(() => {
-      observeImage('#editor img')
+      // nextTick(() => {
+      //   observeImage('#editor img')
+      // })
     })
-  }, 1000)
 }
 
 function observeImage(selector) {
@@ -177,10 +187,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div>
-    <header flex items-center gap-2>
+  <div box-border h-vh flex flex-col overflow-hidden>
+    <header flex flex-shrink-0 items-center gap-2 p-lg>
       <div flex-center gap-2 text-4>
-        <label for="cutting">设置切割的间隔</label>
+        <label for="cutting">每多少段切割一次</label>
         <input id="cutting" v-model="step" type="number" min="1" border-1 rounded-1 focus-visible:outline-none>
       </div>
 
@@ -188,35 +198,65 @@ onMounted(() => {
         预览
       </button>
     </header>
-    <div flex gap-4>
-      <div h-full min-h-full w="1/2" overflow-hidden>
+    <div flex flex-1 overflow-hidden>
+      <div w="1/2" overflow-y-auto>
         <Toolbar
           :editor="editorRef"
           border-b="1px solid #e8e8e8"
           mode="simple"
+          sticky
+          top-0
+          z-2
         />
         <Editor
           id="editor"
           v-model="valueHtml"
-          min-h-xl
+          h-xl
           :default-config="editorConfig"
-          v-bind="$attrs"
           mode="simple"
           @click="handleClick"
           @on-created="handleCreated"
           @custom-paste="customPaste"
-          v-on="$attrs"
         />
       </div>
-      <div border />
-      <div id="preview" flex flex-col gap-6 w="1/2">
-        <div v-for="(html, i) in paragraphs" :key="i">
+      <div id="preview" w="1/2" flex flex-col gap-6 overflow-y-auto pl-lg prose>
+        <DynamicScroller
+          class="h-full"
+          :items="paragraphs"
+          :min-item-size="200"
+          :emit-update="true"
+        >
+          <template #before>
+            <div class="notice">
+              The message heights are unknown.
+            </div>
+          </template>
+          <template #after>
+            <div class="notice">
+              You have reached the end.
+            </div>
+          </template>
+          <template #default="{ item, index, active }">
+            <DynamicScrollerItem
+              :item="item"
+              :active="active"
+              :data-index="index"
+              :size-dependencies="[item.html]"
+            >
+              <div my-4 text-xl text-red-5 font-bold :title="item.text">
+                paragraphs {{ index + 1 }}
+              </div>
+              <div v-html="item.html" />
+            </DynamicScrollerItem>
+          </template>
+        </DynamicScroller>
+        <!-- <div v-for="(html, i) in paragraphs" :key="i">
           <div text-xl text-red-5 font-bold>
             paragraphs {{ i + 1 }}
           </div>
           <div prose v-html="html" />
           <div border-b="3" />
-        </div>
+        </div> -->
       </div>
     </div>
   </div>
