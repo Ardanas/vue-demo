@@ -4,6 +4,7 @@ import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import { createEditor } from '@wangeditor/editor'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
+import { mdSaverByHtml } from '@/utils/file.js'
 
 const props = defineProps({
   loading: Boolean,
@@ -68,7 +69,6 @@ function pgeneralDataJSON() {
     // eslint-disable-next-line no-alert
     return alert('请先输入内容')
   const dataJSON = editorRef.value.children
-  console.log('dataJSON', dataJSON)
   const _step = step.value
   let s = 0
   let e = _step
@@ -94,7 +94,6 @@ function handlePreview() {
 
 function handleSave() {
   const dataJSONArr = pgeneralDataJSON()
-  console.log('dataJSONArr', dataJSONArr)
   paragraphs.value = dataJSONArr.map((content, index) => {
     const editor = createEditor({
       content,
@@ -181,6 +180,10 @@ function observeImage(selector) {
   })
 }
 
+function handleExportMd() {
+  mdSaverByHtml(valueHtml.value, 'test.md')
+}
+
 onMounted(() => {
   queryData()
 })
@@ -194,9 +197,14 @@ onMounted(() => {
         <input id="cutting" v-model="step" type="number" min="1" border-1 rounded-1 focus-visible:outline-none>
       </div>
 
-      <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handlePreview">
-        预览
-      </button>
+      <div flex-center gap-2>
+        <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handlePreview">
+          预览
+        </button>
+        <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handleExportMd">
+          导出MD
+        </button>
+      </div>
     </header>
     <div flex flex-1 overflow-hidden>
       <div w="1/2" overflow-y-auto>
