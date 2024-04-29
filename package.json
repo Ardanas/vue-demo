@@ -14,6 +14,7 @@
     "@wangeditor/editor-for-vue": "^5.1.12",
     "file-saver": "^2.0.5",
     "joplin-turndown-plugin-gfm": "^1.0.12",
+    "modern-screenshot": "^4.4.39",
     "turndown": "^7.1.3",
     "vue": "^3.2.37",
     "vue-router": "^4.3.2",

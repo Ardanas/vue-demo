@@ -4,7 +4,8 @@ import { Editor, Toolbar } from '@wangeditor/editor-for-vue'
 import { createEditor } from '@wangeditor/editor'
 import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
-import { mdSaverByHtml } from '@/utils/file.js'
+import { exportAsImageByHtml } from '@/utils/exportAsImage.js'
+import exportAsMd from '@/utils/exportAsMd.js'
 
 const props = defineProps({
   loading: Boolean,
@@ -181,7 +182,15 @@ function observeImage(selector) {
 }
 
 function handleExportMd() {
-  mdSaverByHtml(valueHtml.value, 'test.md')
+  exportAsMd(valueHtml.value, 'test.md')
+}
+
+function handleExportImage() {
+  // 得将所有的段落拼接成html, 写入body中，并且让用户看不见
+  // const html = paragraphs.value.reduce((total, cur) => total += cur, '')
+  const htmlString = paragraphs.value.map(item => item.html)
+
+  exportAsImageByHtml(htmlString, 'test.png')
 }
 
 onMounted(() => {
@@ -203,6 +212,9 @@ onMounted(() => {
         </button>
         <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handleExportMd">
           导出MD
+        </button>
+        <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handleExportImage">
+          导出Png
         </button>
       </div>
     </header>
@@ -268,4 +280,5 @@ onMounted(() => {
       </div>
     </div>
   </div>
+  <div id="export-area" />
 </template>
