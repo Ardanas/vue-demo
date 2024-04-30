@@ -6,6 +6,8 @@ import { DynamicScroller, DynamicScrollerItem } from 'vue-virtual-scroller'
 import 'vue-virtual-scroller/dist/vue-virtual-scroller.css'
 import { exportAsImageByHtml } from '@/utils/exportAsImage.js'
 import exportAsMd from '@/utils/exportAsMd.js'
+import exportAsPdf from '@/utils/exportAsPdf'
+import { uploadToSupabase } from '@/utils/supabase'
 
 const props = defineProps({
   loading: Boolean,
@@ -13,7 +15,7 @@ const props = defineProps({
   title: String,
 })
 
-const TEST_HTML = `<p><img src="/images/OIP.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-1.jpeg" alt="" data-href="" style=""/></p><p><br></p><p><br></p><p><img src="/images/OIP-2.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字测试文字</p><p>测试文字</p><p><img src="/images/OIP-3.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-4.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-5.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p><img src="/images/OIP-6.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p><img src="/images/OIP-7.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p>`
+// const TEST_HTML = `<p><img src="/images/OIP.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-1.jpeg" alt="" data-href="" style=""/></p><p><br></p><p><br></p><p><img src="/images/OIP-2.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字测试文字</p><p>测试文字</p><p><img src="/images/OIP-3.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-4.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p>测试文字</p><p><img src="/images/OIP-5.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p><img src="/images/OIP-6.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p><p><img src="/images/OIP-7.jpeg" alt="" data-href="" style=""/></p><p>测试文字</p>`
 
 // 编辑器实例，必须用 shallowRef，重要！
 const editorRef = shallowRef()
@@ -46,7 +48,27 @@ const stopWatchValue = watch(
   },
 )
 
-const editorConfig = { placeholder: '请输入内容...', scroll: false, autoFocus: true }
+const insertImage = ref([])
+
+async function customUpload(file, insertFn) {
+  const url = await uploadToSupabase(file, 'dd')
+  insertFn(url, file.name)
+}
+
+const editorConfig = {
+  placeholder: '请输入内容...',
+  scroll: false,
+  autoFocus: true,
+  MENU_CONF: {
+    uploadImage: {
+      timeout: 5 * 1000, // 5s
+      fieldName: 'package',
+      maxFileSize: 10 * 1024 * 1024, // 10M
+      allowedFileTypes: ['image/*'],
+      customUpload,
+    },
+  },
+}
 
 // 编辑器回调函数
 function handleCreated(editor) {
@@ -90,10 +112,6 @@ function handlePreview() {
     return alert('请输入要按照多少切割文章')
   }
 
-  handleSave()
-}
-
-function handleSave() {
   const dataJSONArr = pgeneralDataJSON()
   paragraphs.value = dataJSONArr.map((content, index) => {
     const editor = createEditor({
@@ -108,6 +126,10 @@ function handleSave() {
   // nextTick(() => {
   //   observeImage('#preview img')
   // })
+}
+
+function handleSave() {
+
 }
 
 function handleKeyDown(event) {
@@ -193,6 +215,10 @@ function handleExportImage() {
   exportAsImageByHtml(htmlString, 'test.png')
 }
 
+function handleExportPdf() {
+  exportAsPdf()
+}
+
 onMounted(() => {
   queryData()
 })
@@ -207,6 +233,9 @@ onMounted(() => {
       </div>
 
       <div flex-center gap-2>
+        <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handleSave">
+          保存
+        </button>
         <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handlePreview">
           预览
         </button>
@@ -215,6 +244,9 @@ onMounted(() => {
         </button>
         <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handleExportImage">
           导出Png
+        </button>
+        <button class="h-9 inline-flex items-center justify-center whitespace-nowrap rounded-md bg-primary px-4 py-2 text-sm text-primary-foreground font-medium shadow transition-colors disabled:pointer-events-none hover:bg-primary/90 disabled:opacity-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring" @click="handleExportPdf">
+          导出PDF
         </button>
       </div>
     </header>

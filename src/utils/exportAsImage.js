@@ -7,67 +7,65 @@ export default async function exportAsImage(node, title) {
   fileSaver(blob, title || 'test.png')
 }
 
-/**
- * 将 HTML 字符串数组转换为图片并保存
- * @param {string[]} htmlStrings - 包含 HTML 字符串的数组
- * @param {string} [fileName] - 保存的文件名
- * @param {string} [fileType] - 保存的文件类型
- * @returns {Promise<void>}
- */
-export async function saveHTMLArrayAsImage(htmlStrings, fileName = 'image.png', fileType = 'image/png') {
-  // 初始化一个空的 Blob 数组
-//   const blobs = []
-  const exportAreaEl = document.querySelector('#export-area')
+export async function generalCanvasByHtmlArray(htmlStrings) {
+  let exportAreaEl = document.querySelector('#export-area')
+  if (!exportAreaEl) {
+    exportAreaEl = document.createElement('div')
+    exportAreaEl.id = 'export-area'
+    document.body.appendChild(exportAreaEl)
+  }
+  // exportAreaEl.classList.add('prose')
+  const contentWidth = exportAreaEl.offsetWidth
   const tempCanvas = document.createElement('canvas')
   const tempCtx = tempCanvas.getContext('2d')
   const canvasList = []
-  let width = 0
+
   let height = 0
   for (const htmlString of htmlStrings) {
     const div = document.createElement('div')
     div.innerHTML = replaceImgSrc(htmlString)
     exportAreaEl.appendChild(div)
-    const canvas = await toCanvas(div, { backgroundColor: '#fff' })
-    width = Math.max(width, canvas.width)
+    const canvas = await toCanvas(exportAreaEl, { backgroundColor: '#fff', scale: devicePixelRatio })
+    const { height: canvasHeight } = canvas
     canvasList.push({
       y: height,
       canvas,
     })
-    height += canvas.height
+    height += canvasHeight
     exportAreaEl.removeChild(div)
   }
-  console.log('height', height)
-  console.log('width', width)
 
-  tempCanvas.width = width
-  tempCanvas.height = height
-  //   tempCtx.scale(devicePixelRatio, devicePixelRatio)
+  tempCanvas.width = contentWidth * devicePixelRatio
+  tempCanvas.height = height * devicePixelRatio
+  tempCtx.scale(devicePixelRatio, devicePixelRatio)
   canvasList.forEach((item) => {
-    tempCtx.drawImage(item.canvas, 0, item.y, width, item.canvas.height)
+    tempCtx.drawImage(item.canvas, 0, item.y, item.canvas.width, item.canvas.height)
   })
+
+  return tempCanvas
+}
+
+export async function saveHtmlArrayAsImage(htmlStrings, fileName = 'image.png') {
+  const tempCanvas = await generalCanvasByHtmlArray(htmlStrings)
 
   tempCanvas.toBlob((blob) => {
     fileSaver(blob, fileName)
   })
-
-  // 使用 FileSaver.js 保存最终的 Blob 对象为文件
-  //   fileSaver(finalBlob, fileName)
-  // 从页面中移除 div 元素
-//   document.body.removeChild(div)
 }
 
-async function saveHTMLAsImage(html, fileName = 'image.png', fileType = 'image/png') {
-  const node = document.createElement('div')
-  node.innerHTML = replaceImgSrc(html)
-  document.body.appendChild(node)
-  const blob = await toBlob(node, { scale: 2 })
+async function saveHtmlAsImage(html, fileName = 'image.png', fileType = 'image/png') {
+  const exportAreaEl = document.querySelector('#export-area')
+  const div = document.createElement('div')
+  div.innerHTML = replaceImgSrc(html)
+  exportAreaEl.appendChild(div)
+  const blob = await toBlob(div, { scale: 2 })
   fileSaver(blob, fileName)
-  document.body.removeChild(node)
+  exportAreaEl.removeChild(div)
 }
 
 export async function exportAsImageByHtml(html, fileName) {
   if (Array.isArray(html))
-    await saveHTMLArrayAsImage(html, fileName)
+    await saveHtmlArrayAsImage(html, fileName)
   else
-    await saveHTMLAsImage(html, fileName)
+    await saveHtmlAsImage(html, fileName)
 }
