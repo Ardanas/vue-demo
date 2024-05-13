@@ -48,8 +48,6 @@ const stopWatchValue = watch(
   },
 )
 
-const insertImage = ref([])
-
 async function customUpload(file, insertFn) {
   const url = await uploadToSupabase(file, 'dd')
   insertFn(url, file.name)
